@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -8,20 +8,11 @@ using System.Security.Cryptography;
 namespace jwt.api.Controllers
 {
 	[ApiController]
-	[Route("jwks-rsa")]
-	public class JwksRsaController : ControllerBase
+	[Route("jwe-rsa")]
+	public class JweRsaController : ControllerBase
 	{
 		private static JsonWebKey _privateJwks;
 		private static JsonWebKey _publicJwks;
-
-
-		[HttpGet("generate-jwks")]
-		public IActionResult GenerateJwksEndPoint()
-		{
-			GenerateJwks();
-
-			return Ok(new { public_jwks = _publicJwks, private_jwks = _privateJwks });
-		}
 
 		[HttpGet("generate")]
 		public IActionResult Generate()
@@ -40,8 +31,6 @@ namespace jwt.api.Controllers
 
 		private static void GenerateJwks()
 		{
-			if (_privateJwks != null) return;
-
 			var rsa = RSA.Create(2048);
 			var parametersPrivate = rsa.ExportParameters(includePrivateParameters: true);
 			var securityKey = new RsaSecurityKey(parametersPrivate)
@@ -56,32 +45,43 @@ namespace jwt.api.Controllers
 			_publicJwks = JsonWebKeyConverter.ConvertFromRSASecurityKey(securityKeyPublic);
 		}
 
-
 		private static string GenerateToken()
 		{
-			var credentials = new SigningCredentials(_privateJwks, SecurityAlgorithms.RsaSsaPssSha256);
-			var claims = new[] { new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString()) };
-			var token = new JwtSecurityToken("issuer", "audience", claims, expires: DateTime.Now.AddMinutes(30), signingCredentials: credentials);
-			var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+			var tokenHandler = new JwtSecurityTokenHandler();
 
-			return tokenString;
+			var enc = new EncryptingCredentials(_publicJwks, SecurityAlgorithms.RsaOAEP, SecurityAlgorithms.Aes128CbcHmacSha256);
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Issuer = "me",
+				Audience = "you",
+				Subject = new ClaimsIdentity(new Claim[]
+				{
+					new Claim("cc", "4000-0000-0000-0002"),
+				}),
+				EncryptingCredentials = enc
+			};
+
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+
+			return tokenHandler.WriteToken(token);
 		}
 
 		private static bool ValidateToken(string token)
 		{
 			try
 			{
-				var validationParameters = new TokenValidationParameters
-				{
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = _publicJwks,
-					ValidateIssuer = false,
-					ValidateAudience = false,
-				};
+				var handler = new JsonWebTokenHandler();
 
-				new JwtSecurityTokenHandler().ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+				var result = handler.ValidateToken(token,
+					new TokenValidationParameters
+					{
+						ValidIssuer = "me",
+						ValidAudience = "you",
+						RequireSignedTokens = false,
+						TokenDecryptionKey = _privateJwks,
+					});
 
-				return true;
+				return result.IsValid;
 			}
 			catch
 			{

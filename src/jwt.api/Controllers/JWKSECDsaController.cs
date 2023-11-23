@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -9,7 +8,7 @@ namespace jwt.api.Controllers
 {
 	[ApiController]
 	[Route("jwks-ecdsa")]
-	public class JWKSECDsaController : ControllerBase
+	public class JwksEcdsaController : ControllerBase
 	{
 		private static JsonWebKey _privateJwks;
 		private static JsonWebKey _publicJwks;

@@ -8,7 +8,7 @@ namespace jwt.api.Controllers
 {
 	[ApiController]
 	[Route("ecdsa")]
-	public class ECDsaController : ControllerBase
+	public class EcdsaController : ControllerBase
 	{
 		/*
 			 #gerar chave privada
