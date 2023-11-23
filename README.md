@@ -1,5 +1,6 @@
 - Esse projeto tem as seguintes finalidades:
-  - Demostrar a geração de tokens jwt com criptogradia assincrona usando os algoritimos RSA e ECDSA
+  - Demostrar a geração de tokens jwt no formato JWS com criptogradia assincrona usando os algoritimos RSA e ECDSA
+  - - Demostrar a geração de tokens jwt no formato JWE com criptogradia assincrona usando os algoritimos RSA e ECDSA
   - Demostrar a geração de JWK com os algoritimos RSA e ECDSA
   - Validalação do token jwt
  
